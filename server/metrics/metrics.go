@@ -13,6 +13,7 @@ type ServerMetrics interface {
 	CloseConnection(name string, proxyType string)
 	AddTrafficIn(name string, proxyType string, trafficBytes int64)
 	AddTrafficOut(name string, proxyType string, trafficBytes int64)
+	UpdateProxyRTT(name string, rttMs float64)
 }
 
 var Server ServerMetrics = noopServerMetrics{}
@@ -35,3 +36,5 @@ func (noopServerMetrics) OpenConnection(string, string)       {}
 func (noopServerMetrics) CloseConnection(string, string)      {}
 func (noopServerMetrics) AddTrafficIn(string, string, int64)  {}
 func (noopServerMetrics) AddTrafficOut(string, string, int64) {}
+func (noopServerMetrics) UpdateProxyRTT(string, float64)      {}
+

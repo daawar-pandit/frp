@@ -406,6 +406,7 @@ func (ctl *Control) handlePing(m msg.Message) {
 	xl := ctl.xl
 	inMsg := m.(*msg.Ping)
 
+
 	content := &plugin.PingContent{
 		User: plugin.UserInfo{
 			User:  ctl.loginMsg.User,
@@ -429,6 +430,18 @@ func (ctl *Control) handlePing(m msg.Message) {
 	ctl.lastPing.Store(time.Now())
 	xl.Debugf("receive heartbeat")
 	_ = ctl.msgDispatcher.Send(&msg.Pong{})
+
+	// Update metrics for all proxies of this client with RTT from client
+	if inMsg.LastRTT > 0 {
+		rttMs := float64(inMsg.LastRTT) / 1000.0
+		xl.Debugf("Received heartbeat with RTT: %.2fms", rttMs)
+		
+		ctl.mu.RLock()
+		for name := range ctl.proxies {
+			metrics.Server.UpdateProxyRTT(name, rttMs)
+		}
+		ctl.mu.RUnlock()
+	}
 }
 
 func (ctl *Control) handleNatHoleVisitor(m msg.Message) {

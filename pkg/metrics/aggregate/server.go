@@ -91,3 +91,9 @@ func (m *serverMetrics) AddTrafficOut(name string, proxyType string, trafficByte
 		v.AddTrafficOut(name, proxyType, trafficBytes)
 	}
 }
+
+func (m *serverMetrics) UpdateProxyRTT(name string, rttMs float64) {
+	for _, v := range m.ms {
+		v.UpdateProxyRTT(name, rttMs)
+	}
+}

@@ -19,6 +19,12 @@ class BaseProxy {
   locations: string
   subdomain: string
 
+  // Monitoring metrics
+  latencyRttMs: number
+  jitterMs: number
+  speedInMbps: number
+  speedOutMbps: number
+
   constructor(proxyStats: any) {
     this.name = proxyStats.name
     this.type = ''
@@ -49,6 +55,12 @@ class BaseProxy {
     this.hostHeaderRewrite = ''
     this.locations = ''
     this.subdomain = ''
+
+    // Monitoring metrics
+    this.latencyRttMs = proxyStats.latencyRttMs || 0
+    this.jitterMs = proxyStats.jitterMs || 0
+    this.speedInMbps = proxyStats.speedInMbps || 0
+    this.speedOutMbps = proxyStats.speedOutMbps || 0
   }
 }
 
@@ -128,7 +140,7 @@ class TCPMuxProxy extends BaseProxy {
       if (proxyStats.conf.subdomain) {
         this.subdomain = `${proxyStats.conf.subdomain}.${subdomainHost}`
       }
-    } 
+    }
   }
 }
 
@@ -146,6 +158,14 @@ class SUDPProxy extends BaseProxy {
   }
 }
 
+// Tunnel health summary interface
+interface TunnelHealth {
+  totalTunnels: number
+  onlineTunnels: number
+  offlineTunnels: number
+  allTunnelsOnline: boolean
+}
+
 export {
   BaseProxy,
   TCPProxy,
@@ -156,3 +176,6 @@ export {
   STCPProxy,
   SUDPProxy,
 }
+
+export type { TunnelHealth }
+

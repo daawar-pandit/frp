@@ -1,195 +1,282 @@
 <template>
-  <div>
-    <el-row>
-      <el-col :md="12">
-        <div class="source">
-          <el-form
-            label-position="left"
-            label-width="220px"
-            class="server_info"
-          >
-            <el-form-item label="Version">
-              <span>{{ data.version }}</span>
-            </el-form-item>
-            <el-form-item label="BindPort">
-              <span>{{ data.bindPort }}</span>
-            </el-form-item>
-            <el-form-item label="KCP Bind Port" v-if="data.kcpBindPort != 0">
-              <span>{{ data.kcpBindPort }}</span>
-            </el-form-item>
-            <el-form-item label="QUIC Bind Port" v-if="data.quicBindPort != 0">
-              <span>{{ data.quicBindPort }}</span>
-            </el-form-item>
-            <el-form-item label="HTTP Port" v-if="data.vhostHTTPPort != 0">
-              <span>{{ data.vhostHTTPPort }}</span>
-            </el-form-item>
-            <el-form-item label="HTTPS Port" v-if="data.vhostHTTPSPort != 0">
-              <span>{{ data.vhostHTTPSPort }}</span>
-            </el-form-item>
-            <el-form-item
-              label="TCPMux HTTPConnect Port"
-              v-if="data.tcpmuxHTTPConnectPort != 0"
-            >
-              <span>{{ data.tcpmuxHTTPConnectPort }}</span>
-            </el-form-item>
-            <el-form-item
-              label="Subdomain Host"
-              v-if="data.subdomainHost != ''"
-            >
-              <LongSpan :content="data.subdomainHost" :length="30"></LongSpan>
-            </el-form-item>
-            <el-form-item label="Max PoolCount">
-              <span>{{ data.maxPoolCount }}</span>
-            </el-form-item>
-            <el-form-item label="Max Ports Per Client">
-              <span>{{ data.maxPortsPerClient }}</span>
-            </el-form-item>
-            <el-form-item label="Allow Ports" v-if="data.allowPortsStr != ''">
-              <LongSpan :content="data.allowPortsStr" :length="30"></LongSpan>
-            </el-form-item>
-            <el-form-item label="TLS Force" v-if="data.tlsForce === true">
-              <span>{{ data.tlsForce }}</span>
-            </el-form-item>
-            <el-form-item label="HeartBeat Timeout">
-              <span>{{ data.heartbeatTimeout }}</span>
-            </el-form-item>
-            <el-form-item label="Client Counts">
-              <span>{{ data.clientCounts }}</span>
-            </el-form-item>
-            <el-form-item label="Current Connections">
-              <span>{{ data.curConns }}</span>
-            </el-form-item>
-            <el-form-item label="Proxy Counts">
-              <span>{{ data.proxyCounts }}</span>
-            </el-form-item>
-          </el-form>
+  <div class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Server Info Card -->
+      <div class="bg-surface rounded-xl border border-border p-6 shadow-sm transition-colors duration-300">
+        <h2 class="text-lg font-semibold mb-4 text-primary flex items-center">
+            <el-icon class="mr-2"><InfoFilled /></el-icon>
+            Server Information
+        </h2>
+        <div class="space-y-0 text-sm">
+            <div class="info-row">
+                <span class="info-label">Version</span>
+                <span class="info-value">{{ data.version }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Bind Port</span>
+                <span class="info-value">{{ data.bindPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.kcpBindPort != 0">
+                <span class="info-label">KCP Bind Port</span>
+                <span class="info-value">{{ data.kcpBindPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.quicBindPort != 0">
+                <span class="info-label">QUIC Bind Port</span>
+                <span class="info-value">{{ data.quicBindPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.vhostHTTPPort != 0">
+                <span class="info-label">HTTP Port</span>
+                <span class="info-value">{{ data.vhostHTTPPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.vhostHTTPSPort != 0">
+                <span class="info-label">HTTPS Port</span>
+                <span class="info-value">{{ data.vhostHTTPSPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.tcpmuxHTTPConnectPort != 0">
+                <span class="info-label">TCPMux HTTPConnect Port</span>
+                <span class="info-value">{{ data.tcpmuxHTTPConnectPort }}</span>
+            </div>
+            <div class="info-row" v-if="data.subdomainHost != ''">
+                <span class="info-label">Subdomain Host</span>
+                <span class="info-value">
+                    <LongSpan :content="data.subdomainHost" :length="30"></LongSpan>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Max PoolCount</span>
+                <span class="info-value">{{ data.maxPoolCount }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Max Ports Per Client</span>
+                <span class="info-value">{{ data.maxPortsPerClient }}</span>
+            </div>
+            <div class="info-row" v-if="data.allowPortsStr != ''">
+                <span class="info-label">Allow Ports</span>
+                <span class="info-value">
+                    <LongSpan :content="data.allowPortsStr" :length="30"></LongSpan>
+                </span>
+            </div>
+            <div class="info-row" v-if="data.tlsForce === true">
+                <span class="info-label">TLS Force</span>
+                <span class="info-value">{{ data.tlsForce }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">HeartBeat Timeout</span>
+                <span class="info-value">{{ data.heartbeatTimeout }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Client Counts</span>
+                <span class="info-value highlight">{{ metricsStream.serverMetrics.clientCounts || data.clientCounts }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Current Connections</span>
+                <span class="info-value highlight">{{ metricsStream.serverMetrics.curConns || data.curConns }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Proxy Counts</span>
+                <span class="info-value highlight">{{ tunnelHealth.totalTunnels || data.proxyCounts }}</span>
+            </div>
         </div>
-      </el-col>
-      <el-col :md="12">
-        <div
-          id="traffic"
-          style="width: 400px; height: 250px; margin-bottom: 30px"
-        ></div>
-        <div id="proxies" style="width: 400px; height: 250px"></div>
-      </el-col>
-    </el-row>
+      </div>
+
+      <!-- Charts Card -->
+      <div class="space-y-6">
+         <!-- Tunnel Health -->
+         <div class="bg-surface rounded-xl border border-border p-6 shadow-sm transition-colors duration-300">
+             <h2 class="text-lg font-semibold mb-4 text-primary flex items-center">
+                <el-icon class="mr-2"><Connection /></el-icon>
+                Tunnel Health
+                <!-- Live indicator -->
+                <span v-if="metricsStream.connectionState.value === 'connected'" class="ml-3 flex items-center text-xs text-green-600 dark:text-green-400">
+                  <span class="relative flex h-2 w-2 mr-1">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  LIVE
+                </span>
+            </h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-secondary text-sm mb-1">Status</p>
+                    <p class="text-3xl font-bold" :class="tunnelHealth.allTunnelsOnline ? 'text-green-500' : 'text-red-500'">
+                        {{ tunnelHealth.onlineTunnels }} / {{ tunnelHealth.totalTunnels }}
+                    </p>
+                    <p class="text-sm text-secondary mt-2">
+                        {{ tunnelHealth.allTunnelsOnline ? 'All Tunnels Online' : `${tunnelHealth.offlineTunnels} Tunnel(s) Offline` }}
+                    </p>
+                </div>
+                <div 
+                    class="w-6 h-6 rounded-full animate-pulse"
+                    :class="tunnelHealth.allTunnelsOnline ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'"
+                ></div>
+            </div>
+         </div>
+
+         <!-- Traffic -->
+         <div class="bg-surface rounded-xl border border-border p-6 shadow-sm transition-colors duration-300">
+             <h2 class="text-lg font-semibold mb-4 text-primary flex items-center">
+                <el-icon class="mr-2"><TrendCharts /></el-icon>
+                Traffic
+            </h2>
+            <div id="traffic" class="w-full h-64"></div>
+         </div>
+
+         <!-- Proxies -->
+         <div class="bg-surface rounded-xl border border-border p-6 shadow-sm transition-colors duration-300">
+             <h2 class="text-lg font-semibold mb-4 text-primary flex items-center">
+                <el-icon class="mr-2"><PieChart /></el-icon>
+                Proxies
+             </h2>
+            <div id="proxies" class="w-full h-64"></div>
+         </div>
+      </div>
+
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { onMounted, nextTick, reactive, watch } from 'vue'
 import { DrawTrafficChart, DrawProxyChart } from '../utils/chart'
+import { useServerInfo } from '../composables/useServerInfo'
+import { useSharedMetricsStream } from '../composables/useMetricsStream'
+// apiUrl removed - using SSE stream instead
 import LongSpan from './LongSpan.vue'
+import { InfoFilled, TrendCharts, PieChart, Connection } from '@element-plus/icons-vue'
+import type { TunnelHealth } from '../utils/proxy'
 
-let data = ref({
-  version: '',
-  bindPort: 0,
-  kcpBindPort: 0,
-  quicBindPort: 0,
-  vhostHTTPPort: 0,
-  vhostHTTPSPort: 0,
-  tcpmuxHTTPConnectPort: 0,
-  subdomainHost: '',
-  maxPoolCount: 0,
-  maxPortsPerClient: '',
-  allowPortsStr: '',
-  tlsForce: false,
-  heartbeatTimeout: 0,
-  clientCounts: 0,
-  curConns: 0,
-  proxyCounts: 0,
+// Use the composable for server info management
+const { data, fetchServerInfo } = useServerInfo()
+
+// Connect to real-time metrics stream
+const metricsStream = useSharedMetricsStream(1000)
+
+// Tunnel health state - computed from real-time stream
+const tunnelHealth = reactive<TunnelHealth>({
+  totalTunnels: 0,
+  onlineTunnels: 0,
+  offlineTunnels: 0,
+  allTunnelsOnline: true
 })
 
-const fetchData = () => {
-  fetch('../api/serverinfo', { credentials: 'include' })
-    .then((res) => res.json())
-    .then((json) => {
-      data.value.version = json.version
-      data.value.bindPort = json.bindPort
-      data.value.kcpBindPort = json.kcpBindPort
-      data.value.quicBindPort = json.quicBindPort
-      data.value.vhostHTTPPort = json.vhostHTTPPort
-      data.value.vhostHTTPSPort = json.vhostHTTPSPort
-      data.value.tcpmuxHTTPConnectPort = json.tcpmuxHTTPConnectPort
-      data.value.subdomainHost = json.subdomainHost
-      data.value.maxPoolCount = json.maxPoolCount
-      data.value.maxPortsPerClient = json.maxPortsPerClient
-      if (data.value.maxPortsPerClient == '0') {
-        data.value.maxPortsPerClient = 'no limit'
-      }
-      data.value.allowPortsStr = json.allowPortsStr
-      data.value.tlsForce = json.tlsForce
-      data.value.heartbeatTimeout = json.heartbeatTimeout
-      data.value.clientCounts = json.clientCounts
-      data.value.curConns = json.curConns
-      data.value.proxyCounts = 0
-      if (json.proxyTypeCount != null) {
-        if (json.proxyTypeCount.tcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.tcp
-        }
-        if (json.proxyTypeCount.udp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.udp
-        }
-        if (json.proxyTypeCount.http != null) {
-          data.value.proxyCounts += json.proxyTypeCount.http
-        }
-        if (json.proxyTypeCount.https != null) {
-          data.value.proxyCounts += json.proxyTypeCount.https
-        }
-        if (json.proxyTypeCount.stcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.stcp
-        }
-        if (json.proxyTypeCount.sudp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.sudp
-        }
-        if (json.proxyTypeCount.xtcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.xtcp
-        }
-      }
-
-      // draw chart
-      DrawTrafficChart('traffic', json.totalTrafficIn, json.totalTrafficOut)
-      DrawProxyChart('proxies', json)
-    })
-    .catch(() => {
-      ElMessage({
-        showClose: true,
-        message: 'Get server info from frps failed!',
-        type: 'warning',
-      })
-    })
+// Compute tunnel health from SSE proxy metrics in real-time
+const updateTunnelHealth = () => {
+  let total = 0
+  let online = 0
+  
+  metricsStream.proxyMetrics.forEach((proxy) => {
+    total++
+    if (proxy.status === 'online') {
+      online++
+    }
+  })
+  
+  tunnelHealth.totalTunnels = total
+  tunnelHealth.onlineTunnels = online
+  tunnelHealth.offlineTunnels = total - online
+  tunnelHealth.allTunnelsOnline = total > 0 && online === total
 }
-fetchData()
+
+// Watch for stream updates and recompute tunnel health
+watch(
+  () => metricsStream.lastUpdate.value,
+  () => {
+    updateTunnelHealth()
+  }
+)
+
+// Watch server metrics from stream and update charts
+watch(
+  () => metricsStream.serverMetrics,
+  (newMetrics) => {
+    // Update traffic chart
+    nextTick(() => {
+      DrawTrafficChart('traffic', newMetrics.totalTrafficIn || 0, newMetrics.totalTrafficOut || 0)
+    })
+  },
+  { deep: true }
+)
+
+// Compute proxy type counts from stream
+const computeProxyTypeCounts = () => {
+  const counts: Record<string, number> = {
+    tcp: 0,
+    udp: 0,
+    http: 0,
+    https: 0,
+    stcp: 0,
+    sudp: 0,
+    xtcp: 0,
+    tcpmux: 0
+  }
+  
+  metricsStream.proxyMetrics.forEach((proxy) => {
+    if (counts[proxy.type] !== undefined) {
+      counts[proxy.type]++
+    }
+  })
+  
+  return counts
+}
+
+// Watch proxy metrics and update proxy type chart
+watch(
+  () => metricsStream.lastUpdate.value,
+  () => {
+    nextTick(() => {
+      const proxyTypeCounts = computeProxyTypeCounts()
+      DrawProxyChart('proxies', { proxyTypeCount: proxyTypeCounts })
+    })
+  }
+)
+
+/**
+ * Initialize charts after server info is fetched
+ */
+const initializeCharts = () => {
+  nextTick(() => {
+    DrawTrafficChart('traffic', data.totalTrafficIn || 0, data.totalTrafficOut || 0)
+    DrawProxyChart('proxies', {
+      proxyTypeCount: {
+        tcp: 0,
+        udp: 0,
+        http: 0,
+        https: 0,
+        stcp: 0,
+        sudp: 0,
+        xtcp: 0,
+        ...data.proxyTypeCount
+      }
+    })
+  })
+}
+
+onMounted(async () => {
+  // SSE connection is managed by App.vue
+  
+  // Fetch initial server info
+  await fetchServerInfo()
+  
+  // Initialize tunnel health from stream (if already connected)
+  updateTunnelHealth()
+  
+  // Initialize charts
+  initializeCharts()
+})
 </script>
 
-<style>
-.source {
-  border-radius: 4px;
-  transition: 0.2s;
-  padding-left: 24px;
-  padding-right: 24px;
+<style scoped>
+.info-row {
+    @apply flex justify-between py-3 border-b border-border first:pt-0 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-sm transition-colors;
 }
-
-.server_info {
-  margin-left: 40px;
-  font-size: 0px;
+.info-label {
+    @apply text-secondary font-medium;
 }
-
-.server_info .el-form-item__label {
-  color: #99a9bf;
-  height: 40px;
-  line-height: 40px;
+.info-value {
+    @apply text-primary font-medium;
 }
-
-.server_info .el-form-item__content {
-  height: 40px;
-  line-height: 40px;
-}
-
-.server_info .el-form-item {
-  margin-right: 0;
-  margin-bottom: 0;
-  width: 100%;
+.highlight {
+    @apply text-accent font-semibold;
 }
 </style>

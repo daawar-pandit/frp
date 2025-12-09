@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -54,6 +55,10 @@ func (svr *Service) registerRouteHandlers(helper *httppkg.RouterRegisterHelper) 
 	subRouter.HandleFunc("/api/proxy/{type}/{name}", svr.apiProxyByTypeAndName).Methods("GET")
 	subRouter.HandleFunc("/api/traffic/{name}", svr.apiProxyTraffic).Methods("GET")
 	subRouter.HandleFunc("/api/proxies", svr.deleteProxies).Methods("DELETE")
+	subRouter.HandleFunc("/api/health/tunnels", svr.apiTunnelHealth).Methods("GET")
+	
+	// SSE endpoint for real-time metrics streaming
+	subRouter.HandleFunc("/api/stream/metrics", svr.apiStreamMetrics).Methods("GET")
 
 	// view
 	subRouter.Handle("/favicon.ico", http.FileServer(helper.AssetsFS)).Methods("GET")
@@ -205,6 +210,12 @@ type ProxyStatsInfo struct {
 	LastStartTime   string `json:"lastStartTime"`
 	LastCloseTime   string `json:"lastCloseTime"`
 	Status          string `json:"status"`
+
+	// Monitoring metrics
+	LatencyRTTMs float64 `json:"latencyRttMs"`
+	JitterMs     float64 `json:"jitterMs"`
+	SpeedInMbps  float64 `json:"speedInMbps"`
+	SpeedOutMbps float64 `json:"speedOutMbps"`
 }
 
 type GetProxyInfoResp struct {
@@ -265,6 +276,13 @@ func (svr *Service) getProxyStatsByType(proxyType string) (proxyInfos []*ProxySt
 		proxyInfo.CurConns = ps.CurConns
 		proxyInfo.LastStartTime = ps.LastStartTime
 		proxyInfo.LastCloseTime = ps.LastCloseTime
+
+		// Add monitoring metrics
+		proxyInfo.LatencyRTTMs = ps.LatencyRTTMs
+		proxyInfo.JitterMs = ps.JitterMs
+		proxyInfo.SpeedInMbps = ps.SpeedInMbps
+		proxyInfo.SpeedOutMbps = ps.SpeedOutMbps
+
 		proxyInfos = append(proxyInfos, proxyInfo)
 	}
 	return
@@ -404,3 +422,158 @@ func (svr *Service) deleteProxies(w http.ResponseWriter, r *http.Request) {
 	cleared, total := mem.StatsCollector.ClearOfflineProxies()
 	log.Infof("cleared [%d] offline proxies, total [%d] proxies", cleared, total)
 }
+
+// /api/health/tunnels
+func (svr *Service) apiTunnelHealth(w http.ResponseWriter, r *http.Request) {
+	res := GeneralResponse{Code: 200}
+	defer func() {
+		log.Infof("http response [%s]: code [%d]", r.URL.Path, res.Code)
+		w.WriteHeader(res.Code)
+		if len(res.Msg) > 0 {
+			_, _ = w.Write([]byte(res.Msg))
+		}
+	}()
+	log.Infof("http request: [%s]", r.URL.Path)
+
+	health := mem.StatsCollector.GetTunnelHealth()
+	buf, _ := json.Marshal(health)
+	res.Msg = string(buf)
+}
+
+// StreamMetricsEvent represents a real-time metrics update
+type StreamMetricsEvent struct {
+	Type      string                   `json:"type"`
+	Timestamp int64                    `json:"timestamp"`
+	Server    *ServerMetricsUpdate     `json:"server,omitempty"`
+	Proxies   []*ProxyMetricsUpdate    `json:"proxies,omitempty"`
+}
+
+type ServerMetricsUpdate struct {
+	TotalTrafficIn  int64 `json:"totalTrafficIn"`
+	TotalTrafficOut int64 `json:"totalTrafficOut"`
+	CurConns        int64 `json:"curConns"`
+	ClientCounts    int64 `json:"clientCounts"`
+}
+
+type ProxyMetricsUpdate struct {
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	Status       string  `json:"status"`
+	CurConns     int64   `json:"curConns"`
+	TrafficIn    int64   `json:"trafficIn"`
+	TrafficOut   int64   `json:"trafficOut"`
+	LatencyRTTMs float64 `json:"latencyRttMs"`
+	JitterMs     float64 `json:"jitterMs"`
+	SpeedInMbps  float64 `json:"speedInMbps"`
+	SpeedOutMbps float64 `json:"speedOutMbps"`
+}
+
+// /api/stream/metrics - SSE endpoint for real-time metrics
+func (svr *Service) apiStreamMetrics(w http.ResponseWriter, r *http.Request) {
+	log.Infof("SSE client connected: [%s]", r.RemoteAddr)
+
+	// Set headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "SSE not supported", http.StatusInternalServerError)
+		return
+	}
+
+	// Get update interval from query param (default 2 seconds, min 1s, max 60s)
+	intervalStr := r.URL.Query().Get("interval")
+	interval := 2 * time.Second
+	if intervalStr != "" {
+		if parsed, err := time.ParseDuration(intervalStr); err == nil && parsed >= time.Second && parsed <= 60*time.Second {
+			interval = parsed
+		}
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Send initial data immediately
+	if err := svr.sendMetricsEvent(w, flusher); err != nil {
+		log.Warnf("SSE initial send failed for [%s]: %v", r.RemoteAddr, err)
+		return
+	}
+
+	for {
+		select {
+		case <-r.Context().Done():
+			log.Infof("SSE client disconnected: [%s]", r.RemoteAddr)
+			return
+		case <-ticker.C:
+			if err := svr.sendMetricsEvent(w, flusher); err != nil {
+				log.Warnf("SSE send failed for [%s]: %v", r.RemoteAddr, err)
+				return
+			}
+		}
+	}
+}
+
+func (svr *Service) sendMetricsEvent(w http.ResponseWriter, flusher http.Flusher) error {
+	serverStats := mem.StatsCollector.GetServer()
+	
+	event := StreamMetricsEvent{
+		Type:      "metrics",
+		Timestamp: time.Now().UnixMilli(),
+		Server: &ServerMetricsUpdate{
+			TotalTrafficIn:  serverStats.TotalTrafficIn,
+			TotalTrafficOut: serverStats.TotalTrafficOut,
+			CurConns:        serverStats.CurConns,
+			ClientCounts:    serverStats.ClientCounts,
+		},
+		Proxies: make([]*ProxyMetricsUpdate, 0),
+	}
+
+	// Collect all proxy types
+	proxyTypes := []string{"tcp", "udp", "http", "https", "stcp", "sudp", "xtcp", "tcpmux"}
+	for _, pType := range proxyTypes {
+		proxyStats := mem.StatsCollector.GetProxiesByType(pType)
+		for _, ps := range proxyStats {
+			// Use the Online field from ProxyStats which is based on LastStartTime/LastCloseTime
+			status := "offline"
+			if ps.Online {
+				status = "online"
+			}
+			log.Tracef("[SSE] Proxy [%s] type [%s] status [%s] (online=%v, start=%s, close=%s)", ps.Name, ps.Type, status, ps.Online, ps.LastStartTime, ps.LastCloseTime)
+			
+			event.Proxies = append(event.Proxies, &ProxyMetricsUpdate{
+				Name:         ps.Name,
+				Type:         ps.Type,
+				Status:       status,
+				CurConns:     ps.CurConns,
+				TrafficIn:    ps.TodayTrafficIn,
+				TrafficOut:   ps.TodayTrafficOut,
+				LatencyRTTMs: ps.LatencyRTTMs,
+				JitterMs:     ps.JitterMs,
+				SpeedInMbps:  ps.SpeedInMbps,
+				SpeedOutMbps: ps.SpeedOutMbps,
+			})
+		}
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		log.Warnf("failed to marshal SSE event: %v", err)
+		return err
+	}
+
+	if _, err := w.Write([]byte("data: ")); err != nil {
+		return err
+	}
+	if _, err := w.Write(data); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte("\n\n")); err != nil {
+		return err
+	}
+	flusher.Flush()
+	return nil
+}
+

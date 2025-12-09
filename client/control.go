@@ -69,6 +69,10 @@ type Control struct {
 
 	// of time.Time, last time got the Pong message
 	lastPong atomic.Value
+	// of time.Time, last time sent the Ping message
+	lastPing atomic.Value
+	// last RTT in microseconds
+	lastRTT int64
 
 	// The role of msgTransporter is similar to HTTP2.
 	// It allows multiple messages to be sent simultaneously on the same control connection.
@@ -89,6 +93,7 @@ func NewControl(ctx context.Context, sessionCtx *SessionContext) (*Control, erro
 		doneCh:     make(chan struct{}),
 	}
 	ctl.lastPong.Store(time.Now())
+	ctl.lastPing.Store(time.Now())
 
 	if sessionCtx.ConnEncrypted {
 		cryptoRW, err := netpkg.NewCryptoReadWriter(sessionCtx.Conn, []byte(sessionCtx.Common.Auth.Token))
@@ -194,7 +199,15 @@ func (ctl *Control) handlePong(m msg.Message) {
 		return
 	}
 	ctl.lastPong.Store(time.Now())
-	xl.Debugf("receive heartbeat from server")
+	
+	// Calculate RTT
+	if lastPing := ctl.lastPing.Load(); lastPing != nil {
+		rtt := time.Since(lastPing.(time.Time))
+		ctl.lastRTT = rtt.Microseconds()
+		xl.Debugf("receive heartbeat from server, RTT: %v", rtt)
+	} else {
+		xl.Debugf("receive heartbeat from server")
+	}
 }
 
 // closeSession closes the control connection.
@@ -242,11 +255,14 @@ func (ctl *Control) heartbeatWorker() {
 		// Send heartbeat to server.
 		sendHeartBeat := func() (bool, error) {
 			xl.Debugf("send heartbeat to server")
-			pingMsg := &msg.Ping{}
+			pingMsg := &msg.Ping{
+				LastRTT: ctl.lastRTT,
+			}
 			if err := ctl.sessionCtx.AuthSetter.SetPing(pingMsg); err != nil {
 				xl.Warnf("error during ping authentication: %v, skip sending ping message", err)
 				return false, err
 			}
+			ctl.lastPing.Store(time.Now())
 			_ = ctl.msgDispatcher.Send(pingMsg)
 			return false, nil
 		}

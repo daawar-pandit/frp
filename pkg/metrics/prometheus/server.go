@@ -56,6 +56,10 @@ func (m *serverMetrics) AddTrafficOut(name string, proxyType string, trafficByte
 	m.trafficOut.WithLabelValues(name, proxyType).Add(float64(trafficBytes))
 }
 
+func (m *serverMetrics) UpdateProxyRTT(name string, rttMs float64) {
+	// RTT tracking is handled in the mem package, not exposed to Prometheus for now
+}
+
 func newServerMetrics() *serverMetrics {
 	m := &serverMetrics{
 		clientCount: prometheus.NewGauge(prometheus.GaugeOpts{

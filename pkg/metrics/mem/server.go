@@ -65,6 +65,19 @@ func (m *serverMetrics) run() {
 			log.Debugf("clear useless proxy statistics data count %d/%d, cost %v", count, total, time.Since(start))
 		}
 	}()
+
+	// Speed calculation loop
+	go func() {
+		ticker := time.NewTicker(SpeedCalcInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			m.mu.Lock()
+			for _, ps := range m.info.ProxyStatistics {
+				ps.UpdateSpeed(ps.TrafficIn.TodayCount(), ps.TrafficOut.TodayCount())
+			}
+			m.mu.Unlock()
+		}
+	}()
 }
 
 func (m *serverMetrics) clearUselessInfo(continuousOfflineDuration time.Duration) (int, int) {
@@ -130,6 +143,7 @@ func (m *serverMetrics) CloseProxy(name string, proxyType string) {
 	}
 	if proxyStats, ok := m.info.ProxyStatistics[name]; ok {
 		proxyStats.LastCloseTime = time.Now()
+		log.Infof("[Metrics] Proxy [%s] closed at %s (started at %s)", name, proxyStats.LastCloseTime.Format("15:04:05"), proxyStats.LastStartTime.Format("15:04:05"))
 	}
 }
 
@@ -218,6 +232,16 @@ func (m *serverMetrics) GetProxiesByType(proxyType string) []*ProxyStats {
 			TodayTrafficOut: proxyStats.TrafficOut.TodayCount(),
 			CurConns:        int64(proxyStats.CurConns.Count()),
 		}
+
+		// Add monitoring metrics
+		rtt, jitter, speedIn, speedOut := proxyStats.GetMonitoringStats()
+		ps.LatencyRTTMs = rtt
+		ps.JitterMs = jitter
+		ps.SpeedInMbps = speedIn / 1024 / 1024 * 8 // Convert bytes/sec to Mbps
+		ps.SpeedOutMbps = speedOut / 1024 / 1024 * 8
+		ps.Online = proxyStats.LastCloseTime.IsZero() ||
+			proxyStats.LastStartTime.After(proxyStats.LastCloseTime)
+
 		if !proxyStats.LastStartTime.IsZero() {
 			ps.LastStartTime = proxyStats.LastStartTime.Format("01-02 15:04:05")
 		}
@@ -274,3 +298,36 @@ func (m *serverMetrics) GetProxyTraffic(name string) (res *ProxyTrafficInfo) {
 	}
 	return
 }
+
+// UpdateProxyRTT updates the RTT sample for a proxy
+func (m *serverMetrics) UpdateProxyRTT(name string, rttMs float64) {
+	log.Tracef("UpdateProxyRTT for %s: %.2fms", name, rttMs)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if proxyStats, ok := m.info.ProxyStatistics[name]; ok {
+		proxyStats.AddRTTSample(rttMs)
+	}
+}
+
+// GetTunnelHealth returns global tunnel health summary
+func (m *serverMetrics) GetTunnelHealth() *TunnelHealthSummary {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	summary := &TunnelHealthSummary{}
+	for _, proxyStats := range m.info.ProxyStatistics {
+		summary.TotalTunnels++
+		isOnline := proxyStats.LastCloseTime.IsZero() ||
+			proxyStats.LastStartTime.After(proxyStats.LastCloseTime)
+		if isOnline {
+			summary.OnlineTunnels++
+		} else {
+			summary.OfflineTunnels++
+		}
+	}
+	summary.AllTunnelsOnline = summary.TotalTunnels > 0 &&
+		summary.OnlineTunnels == summary.TotalTunnels
+	return summary
+}
+

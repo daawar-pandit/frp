@@ -1,9 +1,44 @@
 serverAddr = "127.0.0.1"
-serverPort = 7000
+serverPort = 443
+
+auth.method = "token"
+auth.token = "dev_token_12345"
+
+# Enable heartbeat for RTT/latency measurement
+# When TCPMux is enabled (default), heartbeat is disabled by default
+# Setting this explicitly enables application-layer heartbeat
+transport.heartbeatInterval = 10
+transport.heartbeatTimeout = 30
+
 
 [[proxies]]
-name = "test-tcp"
+name = "drone-telemetry"
+type = "udp"
+localIP = "127.0.0.1"
+localPort = 14550
+remotePort = 14550
+
+# --- Tunnel 2: Video (RTSP/UDP) ---
+# "I want to expose my local UDP 5600 to the world on VPS port 5600"
+[[proxies]]
+name = "drone-video"
+type = "udp"
+localIP = "127.0.0.1"
+localPort = 5600
+remotePort = 5600
+
+# --- Tunnel 3: Admin SSH (Backup) ---
+# "I want to SSH into this box via VPS port 6000"
+[[proxies]]
+name = "admin-ssh"
 type = "tcp"
 localIP = "127.0.0.1"
-localPort = 22
+localPort = 6000
 remotePort = 6000
+
+[[proxies]]
+name = "admin-web"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 3000
+customDomains = ["localhost"]

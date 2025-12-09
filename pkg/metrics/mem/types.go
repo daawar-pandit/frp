@@ -15,6 +15,7 @@
 package mem
 
 import (
+	"sync"
 	"time"
 
 	"github.com/fatedier/frp/pkg/util/metric"
@@ -40,6 +41,13 @@ type ProxyStats struct {
 	LastStartTime   string
 	LastCloseTime   string
 	CurConns        int64
+
+	// Monitoring metrics
+	LatencyRTTMs float64 `json:"latencyRttMs"`
+	JitterMs     float64 `json:"jitterMs"`
+	SpeedInMbps  float64 `json:"speedInMbps"`
+	SpeedOutMbps float64 `json:"speedOutMbps"`
+	Online       bool    `json:"online"`
 }
 
 type ProxyTrafficInfo struct {
@@ -56,6 +64,17 @@ type ProxyStatistics struct {
 	CurConns      metric.Counter
 	LastStartTime time.Time
 	LastCloseTime time.Time
+
+	// Monitoring metrics
+	RTTSamples     []float64  // Rolling window of RTT samples (ms)
+	LastRTT        float64    // Last measured RTT in ms
+	Jitter         float64    // Standard deviation of RTT samples
+	SpeedIn        float64    // Current download speed (bytes/sec)
+	SpeedOut       float64    // Current upload speed (bytes/sec)
+	LastTrafficIn  int64      // Previous traffic in for speed calc
+	LastTrafficOut int64      // Previous traffic out for speed calc
+	LastSpeedCheck time.Time  // Time of last speed calculation
+	RTTMu          sync.Mutex // Protects RTT/jitter fields
 }
 
 type ServerStatistics struct {
@@ -74,10 +93,20 @@ type ServerStatistics struct {
 	ProxyStatistics map[string]*ProxyStatistics
 }
 
+// TunnelHealthSummary for global health endpoint
+type TunnelHealthSummary struct {
+	TotalTunnels     int  `json:"totalTunnels"`
+	OnlineTunnels    int  `json:"onlineTunnels"`
+	OfflineTunnels   int  `json:"offlineTunnels"`
+	AllTunnelsOnline bool `json:"allTunnelsOnline"`
+}
+
 type Collector interface {
 	GetServer() *ServerStats
 	GetProxiesByType(proxyType string) []*ProxyStats
 	GetProxiesByTypeAndName(proxyType string, proxyName string) *ProxyStats
 	GetProxyTraffic(name string) *ProxyTrafficInfo
 	ClearOfflineProxies() (int, int)
+	GetTunnelHealth() *TunnelHealthSummary
+	UpdateProxyRTT(name string, rttMs float64)
 }

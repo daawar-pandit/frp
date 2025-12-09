@@ -27,10 +27,13 @@ function DrawTrafficChart(
   trafficIn: number,
   trafficOut: number
 ) {
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons'
-  )
+  const element = document.getElementById(elementId)
+  if (!element) {
+    console.warn(`Chart element '${elementId}' not found`)
+    return
+  }
+  
+  const myChart = echarts.init(element, 'macarons')
   myChart.showLoading()
 
   const option = {
@@ -80,10 +83,13 @@ function DrawTrafficChart(
 }
 
 function DrawProxyChart(elementId: string, serverInfo: any) {
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons'
-  )
+  const element = document.getElementById(elementId)
+  if (!element) {
+    console.warn(`Chart element '${elementId}' not found`)
+    return
+  }
+  
+  const myChart = echarts.init(element, 'macarons')
   myChart.showLoading()
 
   const option = {
@@ -201,16 +207,18 @@ function DrawProxyTrafficChart(
   trafficInArr: number[],
   trafficOutArr: number[]
 ) {
+  const element = document.getElementById(elementId)
+  if (!element) {
+    console.warn(`Chart element '${elementId}' not found`)
+    return
+  }
+  
   const params = {
     width: '600px',
     height: '400px',
   }
 
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons',
-    params
-  )
+  const myChart = echarts.init(element, 'macarons', params)
   myChart.showLoading()
 
   trafficInArr = trafficInArr.reverse()

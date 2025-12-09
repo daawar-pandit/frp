@@ -176,6 +176,8 @@ type NewVisitorConnResp struct {
 type Ping struct {
 	PrivilegeKey string `json:"privilege_key,omitempty"`
 	Timestamp    int64  `json:"timestamp,omitempty"`
+	// LastRTT is the RTT observed by the client in microseconds
+	LastRTT int64 `json:"last_rtt,omitempty"`
 }
 
 type Pong struct {

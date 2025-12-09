@@ -5,13 +5,14 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { DrawProxyTrafficChart } from '../utils/chart.js'
+import { apiUrl } from '../utils/api'
 
 const props = defineProps<{
   proxyName: string
 }>()
 
 const fetchData = () => {
-  let url = '../api/traffic/' + props.proxyName
+  let url = apiUrl('/api/traffic/' + props.proxyName)
   fetch(url, { credentials: 'include' })
     .then((res) => {
       return res.json()
