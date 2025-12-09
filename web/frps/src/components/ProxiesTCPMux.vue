@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TCPMuxProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<TCPMuxProxy[]>([])
@@ -12,7 +13,7 @@ let proxies = ref<TCPMuxProxy[]>([])
 const fetchData = () => {
   let tcpmuxHTTPConnectPort: number
   let subdomainHost: string
-  fetch('../api/serverinfo', { credentials: 'include' })
+  fetch(apiUrl('/api/serverinfo'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })
@@ -20,7 +21,7 @@ const fetchData = () => {
       tcpmuxHTTPConnectPort = json.tcpmuxHTTPConnectPort
       subdomainHost = json.subdomainHost
 
-      fetch('../api/proxy/tcpmux', { credentials: 'include' })
+      fetch(apiUrl('/api/proxy/tcpmux'), { credentials: 'include' })
         .then((res) => {
           return res.json()
         })

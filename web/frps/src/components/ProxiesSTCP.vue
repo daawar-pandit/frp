@@ -5,12 +5,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { STCPProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<STCPProxy[]>([])
 
 const fetchData = () => {
-  fetch('../api/proxy/stcp', { credentials: 'include' })
+  fetch(apiUrl('/api/proxy/stcp'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })

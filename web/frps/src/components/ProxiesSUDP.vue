@@ -5,12 +5,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { SUDPProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<SUDPProxy[]>([])
 
 const fetchData = () => {
-  fetch('../api/proxy/sudp', { credentials: 'include' })
+  fetch(apiUrl('/api/proxy/sudp'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })

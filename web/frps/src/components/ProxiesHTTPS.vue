@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { HTTPSProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<HTTPSProxy[]>([])
@@ -12,7 +13,7 @@ let proxies = ref<HTTPSProxy[]>([])
 const fetchData = () => {
   let vhostHTTPSPort: number
   let subdomainHost: string
-  fetch('../api/serverinfo', { credentials: 'include' })
+  fetch(apiUrl('/api/serverinfo'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })
@@ -22,7 +23,7 @@ const fetchData = () => {
       if (vhostHTTPSPort == null || vhostHTTPSPort == 0) {
         return
       }
-      fetch('../api/proxy/https', { credentials: 'include' })
+      fetch(apiUrl('/api/proxy/https'), { credentials: 'include' })
         .then((res) => {
           return res.json()
         })

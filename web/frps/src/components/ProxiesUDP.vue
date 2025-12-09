@@ -5,12 +5,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { UDPProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<UDPProxy[]>([])
 
 const fetchData = () => {
-  fetch('../api/proxy/udp', { credentials: 'include' })
+  fetch(apiUrl('/api/proxy/udp'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })

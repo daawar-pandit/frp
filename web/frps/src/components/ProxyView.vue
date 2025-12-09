@@ -77,7 +77,7 @@
 
   <el-dialog
     v-model="dialogVisible"
-    destroy-on-close="true"
+    :destroy-on-close="true"
     :title="dialogVisibleName"
     width="700px">
     <Traffic :proxyName="dialogVisibleName" />
@@ -89,7 +89,9 @@ import * as Humanize from 'humanize-plus'
 import type { TableColumnCtx } from 'element-plus'
 import type { BaseProxy } from '../utils/proxy.js'
 import { ElMessage } from 'element-plus'
+import { apiUrl } from '../utils/api'
 import ProxyViewExpand from './ProxyViewExpand.vue'
+import Traffic from './Traffic.vue'
 import { ref } from 'vue'
 
 defineProps<{
@@ -111,7 +113,7 @@ const formatTrafficOut = (row: BaseProxy, _: TableColumnCtx<BaseProxy>) => {
 }
 
 const clearOfflineProxies = () => {
-  fetch('../api/proxies?status=offline', {
+  fetch(apiUrl('/api/proxies?status=offline'), {
     method: 'DELETE',
     credentials: 'include',
   })

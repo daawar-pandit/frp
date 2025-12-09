@@ -9,28 +9,28 @@
             class="server_info"
           >
             <el-form-item label="Version">
-              <span>{{ data.version }}</span>
+              <span style="font-size: 14px;">{{ data.version }}</span>
             </el-form-item>
             <el-form-item label="BindPort">
-              <span>{{ data.bindPort }}</span>
+              <span style="font-size: 14px;">{{ data.bindPort }}</span>
             </el-form-item>
             <el-form-item label="KCP Bind Port" v-if="data.kcpBindPort != 0">
-              <span>{{ data.kcpBindPort }}</span>
+              <span style="font-size: 14px;">{{ data.kcpBindPort }}</span>
             </el-form-item>
             <el-form-item label="QUIC Bind Port" v-if="data.quicBindPort != 0">
-              <span>{{ data.quicBindPort }}</span>
+              <span style="font-size: 14px;">{{ data.quicBindPort }}</span>
             </el-form-item>
             <el-form-item label="HTTP Port" v-if="data.vhostHTTPPort != 0">
-              <span>{{ data.vhostHTTPPort }}</span>
+              <span style="font-size: 14px;">{{ data.vhostHTTPPort }}</span>
             </el-form-item>
             <el-form-item label="HTTPS Port" v-if="data.vhostHTTPSPort != 0">
-              <span>{{ data.vhostHTTPSPort }}</span>
+              <span style="font-size: 14px;">{{ data.vhostHTTPSPort }}</span>
             </el-form-item>
             <el-form-item
               label="TCPMux HTTPConnect Port"
               v-if="data.tcpmuxHTTPConnectPort != 0"
             >
-              <span>{{ data.tcpmuxHTTPConnectPort }}</span>
+              <span style="font-size: 14px;">{{ data.tcpmuxHTTPConnectPort }}</span>
             </el-form-item>
             <el-form-item
               label="Subdomain Host"
@@ -39,28 +39,28 @@
               <LongSpan :content="data.subdomainHost" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="Max PoolCount">
-              <span>{{ data.maxPoolCount }}</span>
+              <span style="font-size: 14px;">{{ data.maxPoolCount }}</span>
             </el-form-item>
             <el-form-item label="Max Ports Per Client">
-              <span>{{ data.maxPortsPerClient }}</span>
+              <span style="font-size: 14px;">{{ data.maxPortsPerClient }}</span>
             </el-form-item>
             <el-form-item label="Allow Ports" v-if="data.allowPortsStr != ''">
               <LongSpan :content="data.allowPortsStr" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="TLS Force" v-if="data.tlsForce === true">
-              <span>{{ data.tlsForce }}</span>
+              <span style="font-size: 14px;">{{ data.tlsForce }}</span>
             </el-form-item>
             <el-form-item label="HeartBeat Timeout">
-              <span>{{ data.heartbeatTimeout }}</span>
+              <span style="font-size: 14px;">{{ data.heartbeatTimeout }}</span>
             </el-form-item>
             <el-form-item label="Client Counts">
-              <span>{{ data.clientCounts }}</span>
+              <span style="font-size: 14px;">{{ data.clientCounts }}</span>
             </el-form-item>
             <el-form-item label="Current Connections">
-              <span>{{ data.curConns }}</span>
+              <span style="font-size: 14px;">{{ data.curConns }}</span>
             </el-form-item>
             <el-form-item label="Proxy Counts">
-              <span>{{ data.proxyCounts }}</span>
+              <span style="font-size: 14px;">{{ data.proxyCounts }}</span>
             </el-form-item>
           </el-form>
         </div>
@@ -77,90 +77,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { onMounted, nextTick } from 'vue'
 import { DrawTrafficChart, DrawProxyChart } from '../utils/chart'
+import { useServerInfo } from '../composables/useServerInfo'
 import LongSpan from './LongSpan.vue'
 
-let data = ref({
-  version: '',
-  bindPort: 0,
-  kcpBindPort: 0,
-  quicBindPort: 0,
-  vhostHTTPPort: 0,
-  vhostHTTPSPort: 0,
-  tcpmuxHTTPConnectPort: 0,
-  subdomainHost: '',
-  maxPoolCount: 0,
-  maxPortsPerClient: '',
-  allowPortsStr: '',
-  tlsForce: false,
-  heartbeatTimeout: 0,
-  clientCounts: 0,
-  curConns: 0,
-  proxyCounts: 0,
-})
+// Use the composable for server info management
+const { data, fetchServerInfo } = useServerInfo()
 
-const fetchData = () => {
-  fetch('../api/serverinfo', { credentials: 'include' })
-    .then((res) => res.json())
-    .then((json) => {
-      data.value.version = json.version
-      data.value.bindPort = json.bindPort
-      data.value.kcpBindPort = json.kcpBindPort
-      data.value.quicBindPort = json.quicBindPort
-      data.value.vhostHTTPPort = json.vhostHTTPPort
-      data.value.vhostHTTPSPort = json.vhostHTTPSPort
-      data.value.tcpmuxHTTPConnectPort = json.tcpmuxHTTPConnectPort
-      data.value.subdomainHost = json.subdomainHost
-      data.value.maxPoolCount = json.maxPoolCount
-      data.value.maxPortsPerClient = json.maxPortsPerClient
-      if (data.value.maxPortsPerClient == '0') {
-        data.value.maxPortsPerClient = 'no limit'
-      }
-      data.value.allowPortsStr = json.allowPortsStr
-      data.value.tlsForce = json.tlsForce
-      data.value.heartbeatTimeout = json.heartbeatTimeout
-      data.value.clientCounts = json.clientCounts
-      data.value.curConns = json.curConns
-      data.value.proxyCounts = 0
-      if (json.proxyTypeCount != null) {
-        if (json.proxyTypeCount.tcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.tcp
-        }
-        if (json.proxyTypeCount.udp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.udp
-        }
-        if (json.proxyTypeCount.http != null) {
-          data.value.proxyCounts += json.proxyTypeCount.http
-        }
-        if (json.proxyTypeCount.https != null) {
-          data.value.proxyCounts += json.proxyTypeCount.https
-        }
-        if (json.proxyTypeCount.stcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.stcp
-        }
-        if (json.proxyTypeCount.sudp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.sudp
-        }
-        if (json.proxyTypeCount.xtcp != null) {
-          data.value.proxyCounts += json.proxyTypeCount.xtcp
-        }
-      }
-
-      // draw chart
-      DrawTrafficChart('traffic', json.totalTrafficIn, json.totalTrafficOut)
-      DrawProxyChart('proxies', json)
+/**
+ * Initialize charts after server info is fetched
+ */
+const initializeCharts = () => {
+  nextTick(() => {
+    DrawTrafficChart('traffic', data.totalTrafficIn || 0, data.totalTrafficOut || 0)
+    DrawProxyChart('proxies', {
+      proxyTypeCount: {
+        tcp: 0,
+        udp: 0,
+        http: 0,
+        https: 0,
+        stcp: 0,
+        sudp: 0,
+        xtcp: 0,
+      },
     })
-    .catch(() => {
-      ElMessage({
-        showClose: true,
-        message: 'Get server info from frps failed!',
-        type: 'warning',
-      })
-    })
+  })
 }
-fetchData()
+
+/**
+ * Load initial data on component mount
+ */
+onMounted(async () => {
+  await fetchServerInfo()
+  initializeCharts()
+})
 </script>
 
 <style>
@@ -173,7 +124,6 @@ fetchData()
 
 .server_info {
   margin-left: 40px;
-  font-size: 0px;
 }
 
 .server_info .el-form-item__label {
@@ -185,6 +135,7 @@ fetchData()
 .server_info .el-form-item__content {
   height: 40px;
   line-height: 40px;
+  font-size: 14px;
 }
 
 .server_info .el-form-item {

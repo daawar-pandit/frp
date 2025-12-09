@@ -5,12 +5,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TCPProxy } from '../utils/proxy.js'
+import { apiUrl } from '../utils/api'
 import ProxyView from './ProxyView.vue'
 
 let proxies = ref<TCPProxy[]>([])
 
 const fetchData = () => {
-  fetch('../api/proxy/tcp', { credentials: 'include' })
+  fetch(apiUrl('/api/proxy/tcp'), { credentials: 'include' })
     .then((res) => {
       return res.json()
     })

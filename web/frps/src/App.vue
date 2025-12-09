@@ -27,7 +27,7 @@
             default-active="/"
             mode="vertical"
             theme="light"
-            router="false"
+            :router="false"
             @select="handleSelect"
           >
             <el-menu-item index="/">Overview</el-menu-item>
@@ -60,8 +60,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDark, useToggle } from '@vueuse/core'
 
+const router = useRouter()
 const isDark = useDark()
 const darkmodeSwitch = ref(isDark)
 const toggleDark = useToggle(isDark)
@@ -69,6 +71,8 @@ const toggleDark = useToggle(isDark)
 const handleSelect = (key: string) => {
   if (key == '') {
     window.open('https://github.com/fatedier/frp')
+  } else {
+    router.push(key)
   }
 }
 </script>
