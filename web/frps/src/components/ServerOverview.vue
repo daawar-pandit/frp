@@ -174,6 +174,7 @@
 
 <script setup lang="ts">
 import { onMounted, nextTick, reactive, watch } from 'vue'
+import { useDark } from '@vueuse/core'
 import { DrawTrafficChart, DrawProxyChart } from '../utils/chart'
 import { useServerInfo } from '../composables/useServerInfo'
 import { useSharedMetricsStream } from '../composables/useMetricsStream'
@@ -189,6 +190,9 @@ import type { TunnelHealth } from '../utils/proxy'
 
 // Use the composable for server info management
 const { data, fetchServerInfo } = useServerInfo()
+
+// Theme state (watch for toggle to redraw charts)
+const isDark = useDark()
 
 // Connect to real-time metrics stream
 const metricsStream = useSharedMetricsStream(1000)
@@ -272,9 +276,23 @@ watch(
     nextTick(() => {
       const proxyTypeCounts = computeProxyTypeCounts()
       DrawProxyChart('proxies', { proxyTypeCount: proxyTypeCounts })
-      
     })
   },
+
+  // Redraw traffic chart when theme changes so legend/title colors update
+  watch(isDark, () => {
+    nextTick(() => {
+      DrawTrafficChart(
+        'traffic',
+        metricsStream.serverMetrics.totalTrafficIn || data.totalTrafficIn || 0,
+        metricsStream.serverMetrics.totalTrafficOut ||
+          data.totalTrafficOut ||
+          0,
+      )
+      const proxyTypeCounts = computeProxyTypeCounts()
+      DrawProxyChart('proxies', { proxyTypeCount: proxyTypeCounts })
+    })
+  }),
 )
 
 /**
