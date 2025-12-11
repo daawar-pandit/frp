@@ -3,13 +3,15 @@ import * as echarts from 'echarts/core'
 import { PieChart, BarChart } from 'echarts/charts'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LabelLayout } from 'echarts/features'
-
+import { useDark } from '@vueuse/core'
 import {
   TitleComponent,
   TooltipComponent,
   LegendComponent,
   GridComponent,
 } from 'echarts/components'
+
+const isDark = useDark()
 
 echarts.use([
   PieChart,
@@ -25,22 +27,33 @@ echarts.use([
 function DrawTrafficChart(
   elementId: string,
   trafficIn: number,
-  trafficOut: number
+  trafficOut: number,
 ) {
   const element = document.getElementById(elementId)
   if (!element) {
     console.warn(`Chart element '${elementId}' not found`)
     return
   }
-  
+
   const myChart = echarts.init(element, 'macarons')
   myChart.showLoading()
+  const total = trafficIn + trafficOut
+  const trafficInPercent =
+    total > 0 ? ((trafficIn / total) * 100).toFixed(2) : 0
+  const trafficOutPercent =
+    total > 0 ? ((trafficOut / total) * 100).toFixed(2) : 0
 
   const option = {
     title: {
       text: 'Network Traffic',
       subtext: 'today',
       left: 'center',
+      textStyle: {
+        color: isDark.value ? '#ffffff' : '#000000',
+      },
+      subtextStyle: {
+        color: isDark.value ? '#cccccc' : '#555555',
+      },
     },
     tooltip: {
       trigger: 'item',
@@ -51,6 +64,17 @@ function DrawTrafficChart(
     legend: {
       orient: 'vertical',
       left: 'left',
+      textStyle: {
+        color: isDark.value ? '#ffffff' : '#000000',
+      },
+      formatter: function (name: string) {
+        if (name === 'Traffic In') {
+          return name + ' - ' + trafficInPercent + '%'
+        } else if (name === 'Traffic Out') {
+          return name + ' - ' + trafficOutPercent + '%'
+        }
+        return name
+      },
       data: ['Traffic In', 'Traffic Out'],
     },
     series: [
@@ -88,7 +112,7 @@ function DrawProxyChart(elementId: string, serverInfo: any) {
     console.warn(`Chart element '${elementId}' not found`)
     return
   }
-  
+
   const myChart = echarts.init(element, 'macarons')
   myChart.showLoading()
 
@@ -97,6 +121,12 @@ function DrawProxyChart(elementId: string, serverInfo: any) {
       text: 'Proxies',
       subtext: 'now',
       left: 'center',
+      textStyle: {
+        color: isDark.value ? '#ffffff' : '#000000',
+      },
+      subtextStyle: {
+        color: isDark.value ? '#cccccc' : '#555555',
+      },
     },
     tooltip: {
       trigger: 'item',
@@ -107,6 +137,27 @@ function DrawProxyChart(elementId: string, serverInfo: any) {
     legend: {
       orient: 'vertical',
       left: 'left',
+      textStyle: {
+        color: isDark.value ? '#ffffff' : '#000000',
+      },
+      formatter: function (name: string) {
+        if (name === 'TCP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.tcp
+        } else if (name === 'UDP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.udp
+        } else if (name === 'HTTP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.http
+        } else if (name === 'HTTPS') {
+          return name + ' - ' + serverInfo.proxyTypeCount.https
+        } else if (name === 'STCP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.stcp
+        } else if (name === 'SUDP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.sudp
+        } else if (name === 'XTCP') {
+          return name + ' - ' + serverInfo.proxyTypeCount.xtcp
+        }
+        return name
+      },
       data: <string[]>[],
     },
     series: [
@@ -205,14 +256,14 @@ function DrawProxyChart(elementId: string, serverInfo: any) {
 function DrawProxyTrafficChart(
   elementId: string,
   trafficInArr: number[],
-  trafficOutArr: number[]
+  trafficOutArr: number[],
 ) {
   const element = document.getElementById(elementId)
   if (!element) {
     console.warn(`Chart element '${elementId}' not found`)
     return
   }
-  
+
   const params = {
     width: '600px',
     height: '400px',
@@ -228,7 +279,7 @@ function DrawProxyTrafficChart(
   const dates: Array<string> = []
   for (let i = 0; i < 7; i++) {
     dates.push(
-      now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate()
+      now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate(),
     )
     now = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
   }

@@ -28,15 +28,15 @@
           <el-menu-item index="/proxies/udp">UDP</el-menu-item>
           <el-menu-item index="/proxies/http">HTTP</el-menu-item>
           <el-menu-item index="/proxies/https">HTTPS</el-menu-item>
-          <el-menu-item index="/proxies/tcpmux">TCPMUX</el-menu-item>
+          <el-menu-item index="/proxies/tcpmux">TCPMUX (P2P)</el-menu-item>
           <el-menu-item index="/proxies/stcp">STCP</el-menu-item>
           <el-menu-item index="/proxies/sudp">SUDP</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="">
+        <!-- <el-menu-item index="">
           <el-icon><QuestionFilled /></el-icon>
           <span>Help</span>
-        </el-menu-item>
+        </el-menu-item> -->
       </el-menu>
     </aside>
 
@@ -59,10 +59,10 @@
             <el-icon v-else class="text-gray-600 dark:text-gray-300 text-xl"><Moon /></el-icon>
           </button>
           
-          <a href="https://github.com/fatedier/frp" target="_blank" class="flex items-center text-sm font-medium hover:text-accent transition-colors">
+          <!-- <a href="https://github.com/fatedier/frp" target="_blank" class="flex items-center text-sm font-medium hover:text-accent transition-colors">
             <span class="mr-1">GitHub</span>
             <el-icon><TopRight /></el-icon>
-          </a>
+          </a> -->
         </div>
       </header>
 
